@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TV Scheduling Checklist - Production Ops</title>
+  <!-- Tailwind CSS CDN for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#0B1728',
+              'navy-card': '#10213A',
+              'navy-border': '#1E3A5F',
+              'navy-hover': '#162D4E',
+              blue: '#0284C7',
+              teal: '#0D9488',
+              accent: '#38BDF8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B1728;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1E3A5F;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0284C7;
+    }
+
+    /* Checkbox custom transitions */
+    .task-checkbox:checked + label {
+      text-decoration: line-through;
+      color: #94A3B8;
+    }
+
+    /* Pulse for on air status */
+    @keyframes onAirPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.08); }
+    }
+    .pulse-dot {
+      animation: onAirPulse 1.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col selection:bg-sky-500 selection:text-white">
+
+  <!-- ================= TOP NAVIGATION / HEADER ================= -->
+  <header class="bg-[#0B1728] border-b border-[#1E3A5F] sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-sky-900/30">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+              <polyline points="17 2 12 7 7 2"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-lg font-extrabold tracking-tight text-white">TV Scheduling Checklist</h1>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30">PROD OPS</span>
+            </div>
+            <p class="text-xs text-slate-400">TV Production Planning & Broadcast Task Tracker</p>
+          </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <!-- View Switcher -->
+          <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <button id="btn-view-list" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center space-x-1.5 bg-sky-600 text-white shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              <span class="hidden sm:inline">List View</span>
+            </button>
+            <button id="btn-view-calendar" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center space-x-1.5 text-slate-400 hover:text-slate-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span class="hidden sm:inline">Calendar View</span>
+            </button>
+          </div>
+
+          <!-- Add Programme Button -->
+          <button id="btn-open-add-modal" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 flex items-center space-x-1.5 transition-all shadow-md shadow-sky-500/20 active:scale-95">
+            <svg class="w-4 h-4 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span>New Programme</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= METRICS & STATS DASHBOARD ================= -->
+  <section class="bg-[#0B1728]/60 border-b border-[#1E3A5F]/60 py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <!-- Stat 1: Total -->
+        <div class="bg-[#10213A] border border-[#1E3A5F] rounded-xl p-3 flex flex-col justify-between shadow-sm">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Scheduled</span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-white" id="stat-total">0</span>
+            <span class="text-[10px] text-sky-400 font-semibold">Programmes</span>
+          </div>
+        </div>
+        <!-- Stat 2: In Progress -->
+        <div class="bg-[#10213A] border border-[#1E3A5F] rounded-xl p-3 flex flex-col justify-between shadow-sm">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-blue-400">In Progress</span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-blue-400" id="stat-in-progress">0</span>
+            <span class="text-[10px] text-slate-400">Active prep</span>
+          </div>
+        </div>
+        <!-- Stat 3: Ready -->
+        <div class="bg-[#10213A] border border-[#1E3A5F] rounded-xl p-3 flex flex-col justify-between shadow-sm">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Ready / Approved</span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-emerald-400" id="stat-ready">0</span>
+            <span class="text-[10px] text-slate-400">Locked</span>
+          </div>
+        </div>
+        <!-- Stat 4: On Air -->
+        <div class="bg-[#10213A] border border-[#1E3A5F] rounded-xl p-3 flex flex-col justify-between shadow-sm">
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-500 pulse-dot"></span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-400">On Air</span>
+          </div>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-rose-400" id="stat-on-air">0</span>
+            <span class="text-[10px] text-slate-400">Live now</span>
+          </div>
+        </div>
+        <!-- Stat 5: Avg Checklist Progress -->
+        <div class="col-span-2 sm:col-span-1 bg-[#10213A] border border-[#1E3A5F] rounded-xl p-3 flex flex-col justify-between shadow-sm">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-teal-400">Checklist Avg</span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-teal-400" id="stat-avg-progress">0%</span>
+            <span class="text-[10px] text-slate-400">Compliance</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FILTER CONTROLS & SEARCH BAR ================= -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-3 w-full">
+    <div class="bg-[#10213A] border border-[#1E3A5F] rounded-2xl p-4 shadow-md space-y-3">
+      <!-- Search & Date Range Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        <!-- Search Input -->
+        <div class="sm:col-span-4 relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+          <input type="text" id="filter-search" placeholder="Search programme, notes, or PIC..." class="w-full pl-9 pr-8 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 transition-all">
+          <button id="btn-clear-search" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          </button>
+        </div>
+
+        <!-- Date Filter Dropdown / Input -->
+        <div class="sm:col-span-3">
+          <input type="date" id="filter-date" class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-sky-500">
+        </div>
+
+        <!-- PIC Filter Dropdown -->
+        <div class="sm:col-span-3">
+          <select id="filter-pic" class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-sky-500">
+            <option value="ALL">All Person In Charge (PIC)</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Dropdown -->
+        <div class="sm:col-span-2">
+          <select id="filter-status" class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-sky-500">
+            <option value="ALL">All Statuses</option>
+            <option value="Draft">Draft</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Ready">Ready</option>
+            <option value="On Air">On Air</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Channel Pills & Quick Reset -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#1E3A5F]/50">
+        <!-- Channel Filter Pills -->
+        <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0" id="channel-filter-pills">
+          <button data-channel="ALL" class="channel-pill active px-3 py-1 rounded-lg text-xs font-bold transition-all bg-sky-600 text-white shadow-sm">All Channels</button>
+          <button data-channel="TV3" class="channel-pill px-3 py-1 rounded-lg text-xs font-bold transition-all bg-slate-900 text-slate-300 hover:bg-slate-800">TV3</button>
+          <button data-channel="8TV" class="channel-pill px-3 py-1 rounded-lg text-xs font-bold transition-all bg-slate-900 text-slate-300 hover:bg-slate-800">8TV</button>
+          <button data-channel="TV9" class="channel-pill px-3 py-1 rounded-lg text-xs font-bold transition-all bg-slate-900 text-slate-300 hover:bg-slate-800">TV9</button>
+          <button data-channel="NTV7" class="channel-pill px-3 py-1 rounded-lg text-xs font-bold transition-all bg-slate-900 text-slate-300 hover:bg-slate-800">NTV7</button>
+          <button data-channel="DS" class="channel-pill px-3 py-1 rounded-lg text-xs font-bold transition-all bg-slate-900 text-slate-300 hover:bg-slate-800">DS</button>
+        </div>
+
+        <!-- Quick Reset & Sample Data -->
+        <div class="flex items-center space-x-2">
+          <button id="btn-reset-filters" class="text-[11px] font-semibold text-slate-400 hover:text-sky-400 transition-colors">
+            Reset Filters
+          </button>
+          <span class="text-slate-600">|</span>
+          <button id="btn-reload-sample" class="text-[11px] font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
+            Reload Sample Data
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MAIN CONTENT VIEW CONTAINER ================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex-1 w-full">
+
+    <!-- LIST VIEW CONTAINER -->
+    <div id="view-list-container" class="space-y-4">
+      <div id="programme-list" class="space-y-3">
+        <!-- Injected via JavaScript -->
+      </div>
+      <!-- Empty State -->
+      <div id="list-empty-state" class="hidden text-center py-16 px-4 bg-[#10213A]/40 border border-[#1E3A5F]/50 rounded-2xl">
+        <svg class="w-12 h-12 mx-auto text-slate-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+        <h3 class="text-base font-bold text-white mb-1">No scheduled programmes match your criteria</h3>
+        <p class="text-xs text-slate-400 mb-4">Try clearing your filters or create a new programme entry.</p>
+        <button id="btn-empty-add" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold">Add First Programme</button>
+      </div>
+    </div>
+
+    <!-- CALENDAR VIEW CONTAINER -->
+    <div id="view-calendar-container" class="hidden space-y-4">
+      <div class="bg-[#10213A] border border-[#1E3A5F] rounded-2xl p-4 sm:p-6 shadow-md">
+        <!-- Month Navigation -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <h2 id="calendar-month-year" class="text-lg font-black text-white">February 2026</h2>
+            <button id="btn-cal-today" class="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white">Today</button>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button id="btn-cal-prev" class="p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </button>
+            <button id="btn-cal-next" class="p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Days of Week Header -->
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+
+        <!-- Calendar Days Grid -->
+        <div id="calendar-days-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Calendar Selected Date Schedule Drawer/List -->
+      <div id="calendar-selected-day-details" class="bg-[#10213A] border border-[#1E3A5F] rounded-2xl p-4 sm:p-5 shadow-md space-y-3">
+        <div class="flex items-center justify-between border-b border-[#1E3A5F]/60 pb-3">
+          <h3 id="cal-selected-day-title" class="text-sm font-bold text-white flex items-center space-x-2">
+            <span>Scheduled Programmes for 24 Feb 2026</span>
+          </h3>
+          <span id="cal-selected-day-count" class="text-xs font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full">0 Programmes</span>
+        </div>
+        <div id="cal-selected-day-list" class="space-y-2">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= ADD / EDIT PROGRAMME MODAL ================= -->
+  <div id="programme-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#10213A] border border-[#1E3A5F] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-[#0B1728] border-b border-[#1E3A5F] flex items-center justify-between">
+        <div>
+          <h3 id="modal-title" class="text-base font-extrabold text-white">Add New Programme</h3>
+          <p class="text-xs text-slate-400">Configure scheduling parameters and broadcast checklist tasks</p>
+        </div>
+        <button id="btn-close-modal" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="programme-form" class="p-6 overflow-y-auto space-y-5 text-xs">
+        <input type="hidden" id="form-programme-id">
+
+        <!-- Row 1: Name & Channel -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">Programme Name *</label>
+            <input type="text" id="form-name" required placeholder="e.g. Buletin Utama 8PM" class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500 focus:border-sky-500">
+          </div>
+          <div>
+            <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">Channel *</label>
+            <select id="form-channel" required class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500">
+              <option value="TV3">TV3</option>
+              <option value="8TV">8TV</option>
+              <option value="TV9">TV9</option>
+              <option value="NTV7">NTV7</option>
+              <option value="DS">DS</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 2: Date & Times -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">Date *</label>
+            <input type="date" id="form-date" required class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500">
+          </div>
+          <div>
+            <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">Start Time *</label>
+            <input type="time" id="form-start-time" required class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500">
+          </div>
+          <div>
+            <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">End Time *</label>
+            <input type="time" id="form-end-time" required class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500">
+          </div>
+        </div>
+
+        <!-- Row 3: PIC & Status -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">Person In Charge (PIC) *</label>
+            <input type="text" id="form-pic" required placeholder="e.g. Siti Sarah (Producer)" class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500">
+          </div>
+          <div>
+            <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">Status *</label>
+            <select id="form-status" required class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500">
+              <option value="Draft">Draft</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Ready">Ready</option>
+              <option value="On Air">On Air</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 4: Tasks Checklist -->
+        <div class="p-4 bg-slate-900/80 border border-[#1E3A5F] rounded-xl space-y-2.5">
+          <label class="block font-bold uppercase tracking-wider text-sky-400">Pre-Production & Broadcast Checklist</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center space-x-2.5 cursor-pointer p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700">
+              <input type="checkbox" id="check-script" class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500">
+              <span class="text-slate-200">1. Script completed</span>
+            </label>
+            <label class="flex items-center space-x-2.5 cursor-pointer p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700">
+              <input type="checkbox" id="check-talent" class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500">
+              <span class="text-slate-200">2. Talent confirmed</span>
+            </label>
+            <label class="flex items-center space-x-2.5 cursor-pointer p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700">
+              <input type="checkbox" id="check-studio" class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500">
+              <span class="text-slate-200">3. Studio booked</span>
+            </label>
+            <label class="flex items-center space-x-2.5 cursor-pointer p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700">
+              <input type="checkbox" id="check-assets" class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500">
+              <span class="text-slate-200">4. Video/assets ready</span>
+            </label>
+            <label class="flex items-center space-x-2.5 cursor-pointer p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700">
+              <input type="checkbox" id="check-approved" class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500">
+              <span class="text-slate-200">5. Approved</span>
+            </label>
+            <label class="flex items-center space-x-2.5 cursor-pointer p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700">
+              <input type="checkbox" id="check-published" class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500">
+              <span class="text-slate-200">6. Published / On Air</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Row 5: Notes -->
+        <div>
+          <label class="block font-bold uppercase tracking-wider text-slate-300 mb-1">Production Notes & Parameters</label>
+          <textarea id="form-notes" rows="3" placeholder="Enter studio configuration, ingest IDs, live cross details..." class="w-full px-3 py-2 bg-slate-900 border border-[#1E3A5F] rounded-xl text-white text-xs focus:ring-1 focus:ring-sky-500"></textarea>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="pt-4 border-t border-[#1E3A5F] flex items-center justify-end space-x-3">
+          <button type="button" id="btn-cancel-modal" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-md shadow-sky-500/20 transition-all">Save Programme</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-[#0B1728] border-t border-[#1E3A5F] py-4 text-center text-xs text-slate-500 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="font-medium text-slate-400">TV Scheduling Checklist · Production Operations System</span>
+      </div>
+      <div>
+        <span>Data persisted locally via Browser LocalStorage</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= JAVASCRIPT APPLICATION LOGIC ================= -->
+  <script>
+    (function() {
+      // Storage Key
+      const STORAGE_KEY = 'tv_scheduling_checklist_v1';
+
+      // Channels configuration
+      const CHANNEL_THEMES = {
+        'TV3': { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30', badge: 'bg-blue-500' },
+        '8TV': { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', badge: 'bg-amber-500' },
+        'TV9': { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30', badge: 'bg-orange-500' },
+        'NTV7': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30', badge: 'bg-purple-500' },
+        'DS': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', badge: 'bg-emerald-500' }
+      };
+
+      // Status configuration
+      const STATUS_CONFIG = {
+        'Draft': { bg: 'bg-slate-800 text-slate-300 border-slate-700', dot: 'bg-slate-400' },
+        'In Progress': { bg: 'bg-blue-950/80 text-blue-300 border-blue-800/60', dot: 'bg-blue-400' },
+        'Ready': { bg: 'bg-emerald-950/80 text-emerald-300 border-emerald-800/60', dot: 'bg-emerald-400' },
+        'On Air': { bg: 'bg-rose-950/80 text-rose-300 border-rose-800/60', dot: 'bg-rose-500 pulse-dot' },
+        'Completed': { bg: 'bg-purple-950/80 text-purple-300 border-purple-800/60', dot: 'bg-purple-400' }
+      };
+
+      // Initial realistic sample data
+      const INITIAL_SAMPLE_DATA = [
+        {
+          id: 'prog-1',
+          name: 'Buletin Utama 8PM',
+          channel: 'TV3',
+          date: '2026-02-24',
+          startTime: '20:00',
+          endTime: '21:00',
+          pic: 'Siti Sarah (Producer)',
+          status: 'Ready',
+          notes: 'Studio 1 Live. Cross over to Putrajaya at 20:30. Ingest SI015001. Ensure TV3 Clockface countdown starts at 19:59:45.',
+          checklist: {
+            scriptCompleted: true,
+            talentConfirmed: true,
+            studioBooked: true,
+            assetsReady: true,
+            approved: true,
+            publishedOnAir: false
+          }
+        },
+        {
+          id: 'prog-2',
+          name: '8TV Mandarin News 8PM',
+          channel: '8TV',
+          date: '2026-02-24',
+          startTime: '20:00',
+          endTime: '20:45',
+          pic: 'Rachel Tan (EP)',
+          status: 'In Progress',
+          notes: 'Studio 3. Promo Mand News 40s SI000430 scheduled in 1st & 3rd break. Rectangle graphics on CG.',
+          checklist: {
+            scriptCompleted: true,
+            talentConfirmed: true,
+            studioBooked: true,
+            assetsReady: false,
+            approved: false,
+            publishedOnAir: false
+          }
+        },
+        {
+          id: 'prog-3',
+          name: 'Berita TV9 7PM',
+          channel: 'TV9',
+          date: '2026-02-24',
+          startTime: '19:00',
+          endTime: '19:50',
+          pic: 'Ahmad Faiz (Director)',
+          status: 'Completed',
+          notes: 'Must end at 7:50pm sharp. STD C starting 14/10, 4 breaks. Overrun strictly disallowed.',
+          checklist: {
+            scriptCompleted: true,
+            talentConfirmed: true,
+            studioBooked: true,
+            assetsReady: true,
+            approved: true,
+            publishedOnAir: true
+          }
+        },
+        {
+          id: 'prog-4',
+          name: 'Didik TV Slot / Buletin Didik',
+          channel: 'NTV7',
+          date: '2026-02-24',
+          startTime: '13:00',
+          endTime: '14:00',
+          pic: 'Hafiz Zulkifli (Tech Lead)',
+          status: 'Ready',
+          notes: 'NO LPF. Before slot put DIDIK TV LOGO IDENT followed by DIDIK TV_MONTAGE -GP.',
+          checklist: {
+            scriptCompleted: true,
+            talentConfirmed: true,
+            studioBooked: true,
+            assetsReady: true,
+            approved: true,
+            publishedOnAir: false
+          }
+        },
+        {
+          id: 'prog-5',
+          name: 'CJ WOW SHOP Live Broadcast',
+          channel: 'DS',
+          date: '2026-02-24',
+          startTime: '11:00',
+          endTime: '12:30',
+          pic: 'Nurul Aini (Line Producer)',
+          status: 'Draft',
+          notes: 'CJWOW -> NO SETTING. 2nd Segment (Break Seg) -> CG (TV3DS) / DS LOGO. Verify product demo inventory.',
+          checklist: {
+            scriptCompleted: true,
+            talentConfirmed: false,
+            studioBooked: true,
+            assetsReady: false,
+            approved: false,
+            publishedOnAir: false
+          }
+        },
+        {
+          id: 'prog-6',
+          name: 'Nightline Live',
+          channel: 'TV3',
+          date: '2026-02-24',
+          startTime: '23:00',
+          endTime: '23:30',
+          pic: 'SY (Shift Lead)',
+          status: 'On Air',
+          notes: 'Promo Nightline SI014968 STD A 30s. Mega Movie extends after Nightline, schedule Negaraku after Mega Movie.',
+          checklist: {
+            scriptCompleted: true,
+            talentConfirmed: true,
+            studioBooked: true,
+            assetsReady: true,
+            approved: true,
+            publishedOnAir: true
+          }
+        },
+        {
+          id: 'prog-7',
+          name: '8TV Morning Express',
+          channel: '8TV',
+          date: '2026-02-25',
+          startTime: '09:30',
+          endTime: '10:30',
+          pic: 'Kevin Lim (Floor Manager)',
+          status: 'In Progress',
+          notes: 'STD D, Comm + Promo = 2mins, A1 = 1min (2 Segments 1 Break). Host interview segment.',
+          checklist: {
+            scriptCompleted: true,
+            talentConfirmed: true,
+            studioBooked: true,
+            assetsReady: false,
+            approved: false,
+            publishedOnAir: false
+          }
+        },
+        {
+          id: 'prog-8',
+          name: 'My #QuranTime 2.0 Live',
+          channel: 'TV9',
+          date: '2026-02-25',
+          startTime: '12:00',
+          endTime: '13:00',
+          pic: 'Ustaz Azlan (Advisor)',
+          status: 'Draft',
+          notes: 'CG (TV9_HD)/TV9 LOGO, TRIGGER DEVICE (VIZRT) & GENERIC JOB DEVICE. Surah Al-Kahf recitation.',
+          checklist: {
+            scriptCompleted: false,
+            talentConfirmed: true,
+            studioBooked: true,
+            assetsReady: false,
+            approved: false,
+            publishedOnAir: false
+          }
+        }
+      ];
+
+      // Application State
+      let programmes = [];
+      let currentView = 'list'; // 'list' or 'calendar'
+      let activeChannelFilter = 'ALL';
+      let selectedCalendarDate = '2026-02-24';
+      let calendarDisplayMonth = new Date(2026, 1, 1); // Feb 2026
+
+      // Initialize App
+      function init() {
+        loadData();
+        setupEventListeners();
+        populatePicFilterOptions();
+        renderStats();
+        renderCurrentView();
+      }
+
+      // Load Data from LocalStorage
+      function loadData() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            programmes = JSON.parse(stored);
+          } else {
+            programmes = JSON.parse(JSON.stringify(INITIAL_SAMPLE_DATA));
+            saveData();
+          }
+        } catch (e) {
+          console.error('Failed to load from storage, using initial sample data', e);
+          programmes = JSON.parse(JSON.stringify(INITIAL_SAMPLE_DATA));
+        }
+      }
+
+      // Save Data to LocalStorage
+      function saveData() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(programmes));
+        } catch (e) {
+          console.error('Failed to save to local storage', e);
+        }
+      }
+
+      // Calculate checklist progress
+      function calculateProgress(checklist) {
+        if (!checklist) return { count: 0, total: 6, percent: 0 };
+        const keys = ['scriptCompleted', 'talentConfirmed', 'studioBooked', 'assetsReady', 'approved', 'publishedOnAir'];
+        const completed = keys.filter(k => checklist[k] === true).length;
+        return {
+          count: completed,
+          total: keys.length,
+          percent: Math.round((completed / keys.length) * 100)
+        };
+      }
+
+      // Render Metrics / Statistics
+      function renderStats() {
+        const total = programmes.length;
+        const inProgress = programmes.filter(p => p.status === 'In Progress').length;
+        const ready = programmes.filter(p => p.status === 'Ready').length;
+        const onAir = programmes.filter(p => p.status === 'On Air').length;
+
+        let totalProgressPct = 0;
+        if (total > 0) {
+          const sum = programmes.reduce((acc, p) => acc + calculateProgress(p.checklist).percent, 0);
+          totalProgressPct = Math.round(sum / total);
+        }
+
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-in-progress').textContent = inProgress;
+        document.getElementById('stat-ready').textContent = ready;
+        document.getElementById('stat-on-air').textContent = onAir;
+        document.getElementById('stat-avg-progress').textContent = `${totalProgressPct}%`;
+      }
+
+      // Populate PIC Filter dropdown dynamically
+      function populatePicFilterOptions() {
+        const picSelect = document.getElementById('filter-pic');
+        const currentSelected = picSelect.value;
+        const pics = Array.from(new Set(programmes.map(p => p.pic).filter(Boolean))).sort();
+
+        picSelect.innerHTML = `<option value="ALL">All Person In Charge (PIC)</option>`;
+        pics.forEach(pic => {
+          const opt = document.createElement('option');
+          opt.value = pic;
+          opt.textContent = pic;
+          if (pic === currentSelected) opt.selected = true;
+          picSelect.appendChild(opt);
+        });
+      }
+
+      // Filtered Programmes
+      function getFilteredProgrammes() {
+        const search = document.getElementById('filter-search').value.toLowerCase().trim();
+        const date = document.getElementById('filter-date').value;
+        const pic = document.getElementById('filter-pic').value;
+        const status = document.getElementById('filter-status').value;
+
+        return programmes.filter(p => {
+          // Channel
+          if (activeChannelFilter !== 'ALL' && p.channel !== activeChannelFilter) return false;
+          // Status
+          if (status !== 'ALL' && p.status !== status) return false;
+          // PIC
+          if (pic !== 'ALL' && p.pic !== pic) return false;
+          // Date
+          if (date && p.date !== date) return false;
+          // Search
+          if (search) {
+            const matchName = p.name.toLowerCase().includes(search);
+            const matchPic = (p.pic || '').toLowerCase().includes(search);
+            const matchNotes = (p.notes || '').toLowerCase().includes(search);
+            const matchChannel = (p.channel || '').toLowerCase().includes(search);
+            if (!matchName && !matchPic && !matchNotes && !matchChannel) return false;
+          }
+          return true;
+        }).sort((a, b) => {
+          // Sort by Date then Start Time
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          return a.startTime.localeCompare(b.startTime);
+        });
+      }
+
+      // Render Current View
+      function renderCurrentView() {
+        if (currentView === 'list') {
+          document.getElementById('view-list-container').classList.remove('hidden');
+          document.getElementById('view-calendar-container').classList.add('hidden');
+          renderListView();
+        } else {
+          document.getElementById('view-list-container').classList.add('hidden');
+          document.getElementById('view-calendar-container').classList.remove('hidden');
+          renderCalendarView();
+        }
+      }
+
+      // Render List View
+      function renderListView() {
+        const listContainer = document.getElementById('programme-list');
+        const emptyState = document.getElementById('list-empty-state');
+        const filtered = getFilteredProgrammes();
+
+        if (filtered.length === 0) {
+          listContainer.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        listContainer.innerHTML = filtered.map(p => {
+          const prog = calculateProgress(p.checklist);
+          const chTheme = CHANNEL_THEMES[p.channel] || { bg: 'bg-slate-800', text: 'text-slate-200', border: 'border-slate-700' };
+          const stConfig = STATUS_CONFIG[p.status] || STATUS_CONFIG['Draft'];
+
+          return `
+            <div class="bg-[#10213A] border border-[#1E3A5F] hover:border-sky-500/50 rounded-2xl p-4 sm:p-5 transition-all shadow-md group">
+              <!-- Top Row: Time, Channel, Title, Status & Actions -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1E3A5F]/60">
+                <div class="flex items-center space-x-2.5 flex-wrap gap-y-1">
+                  <!-- Channel Badge -->
+                  <span class="px-2.5 py-1 text-xs font-black rounded-lg ${chTheme.bg} ${chTheme.text} border ${chTheme.border}">
+                    ${p.channel}
+                  </span>
+
+                  <!-- Time Badge -->
+                  <div class="flex items-center space-x-1 text-xs font-bold text-slate-300 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                    <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>${p.startTime} - ${p.endTime}</span>
+                  </div>
+
+                  <!-- Date -->
+                  <span class="text-xs text-slate-400 font-medium">
+                    📅 ${formatDateString(p.date)}
+                  </span>
+                </div>
+
+                <!-- Right Actions: Status & Edit/Delete -->
+                <div class="flex items-center space-x-2">
+                  <!-- Quick Status Switcher Dropdown -->
+                  <select data-action="change-status" data-id="${p.id}" class="px-2.5 py-1 text-xs font-bold rounded-lg border ${stConfig.bg} focus:outline-none cursor-pointer">
+                    <option value="Draft" ${p.status === 'Draft' ? 'selected' : ''}>Draft</option>
+                    <option value="In Progress" ${p.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="Ready" ${p.status === 'Ready' ? 'selected' : ''}>Ready</option>
+                    <option value="On Air" ${p.status === 'On Air' ? 'selected' : ''}>🔴 On Air</option>
+                    <option value="Completed" ${p.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                  </select>
+
+                  <!-- Edit Button -->
+                  <button data-action="edit-prog" data-id="${p.id}" title="Edit Programme" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+
+                  <!-- Delete Button -->
+                  <button data-action="delete-prog" data-id="${p.id}" title="Delete Programme" class="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-900 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Middle Row: Programme Name & PIC -->
+              <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 class="text-base font-extrabold text-white tracking-tight group-hover:text-sky-300 transition-colors">${p.name}</h3>
+                  <div class="flex items-center space-x-2 mt-1 text-xs text-slate-400">
+                    <span class="inline-flex items-center space-x-1 font-semibold text-slate-300">
+                      <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      <span>PIC: ${p.pic}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Progress Pill and Bar -->
+                <div class="sm:text-right min-w-[180px]">
+                  <div class="flex items-center justify-between sm:justify-end sm:space-x-2 text-xs font-bold mb-1.5">
+                    <span class="text-slate-400 text-[11px]">CHECKLIST PROGRESS:</span>
+                    <span class="${prog.percent === 100 ? 'text-emerald-400' : 'text-sky-400'}">${prog.percent}% (${prog.count}/${prog.total})</span>
+                  </div>
+                  <div class="w-full bg-slate-900 rounded-full h-2 border border-slate-800 overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-300 ${prog.percent === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-sky-500 to-teal-400'}" style="width: ${prog.percent}%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Interactive 6-step Checklist -->
+              <div class="pt-3 border-t border-[#1E3A5F]/40">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+                  <!-- Task 1 -->
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 cursor-pointer select-none transition-colors">
+                    <input type="checkbox" data-action="toggle-task" data-id="${p.id}" data-task="scriptCompleted" ${p.checklist && p.checklist.scriptCompleted ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0">
+                    <span class="text-slate-300 text-[11px] truncate">1. Script</span>
+                  </label>
+                  <!-- Task 2 -->
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 cursor-pointer select-none transition-colors">
+                    <input type="checkbox" data-action="toggle-task" data-id="${p.id}" data-task="talentConfirmed" ${p.checklist && p.checklist.talentConfirmed ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0">
+                    <span class="text-slate-300 text-[11px] truncate">2. Talent</span>
+                  </label>
+                  <!-- Task 3 -->
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 cursor-pointer select-none transition-colors">
+                    <input type="checkbox" data-action="toggle-task" data-id="${p.id}" data-task="studioBooked" ${p.checklist && p.checklist.studioBooked ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0">
+                    <span class="text-slate-300 text-[11px] truncate">3. Studio</span>
+                  </label>
+                  <!-- Task 4 -->
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 cursor-pointer select-none transition-colors">
+                    <input type="checkbox" data-action="toggle-task" data-id="${p.id}" data-task="assetsReady" ${p.checklist && p.checklist.assetsReady ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0">
+                    <span class="text-slate-300 text-[11px] truncate">4. Video/Assets</span>
+                  </label>
+                  <!-- Task 5 -->
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 cursor-pointer select-none transition-colors">
+                    <input type="checkbox" data-action="toggle-task" data-id="${p.id}" data-task="approved" ${p.checklist && p.checklist.approved ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0">
+                    <span class="text-slate-300 text-[11px] truncate">5. Approved</span>
+                  </label>
+                  <!-- Task 6 -->
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 cursor-pointer select-none transition-colors">
+                    <input type="checkbox" data-action="toggle-task" data-id="${p.id}" data-task="publishedOnAir" ${p.checklist && p.checklist.publishedOnAir ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-0">
+                    <span class="text-slate-300 text-[11px] truncate">6. On Air</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Notes Footer (if any) -->
+              ${p.notes ? `
+                <div class="mt-3 pt-2 text-[11px] text-slate-400 bg-slate-900/40 p-2.5 rounded-lg border border-slate-800 flex items-start space-x-2">
+                  <span class="font-bold text-sky-400 uppercase tracking-wider text-[9px] mt-0.5">NOTES:</span>
+                  <span class="flex-1 font-mono text-slate-300 leading-relaxed">${p.notes}</span>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+
+        attachListActionHandlers();
+      }
+
+      // Format Date String nicely
+      function formatDateString(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const m = parseInt(parts[1], 10) - 1;
+        return `${parseInt(parts[2], 10)} ${months[m]} ${parts[0]}`;
+      }
+
+      // Attach event listeners for dynamic card items
+      function attachListActionHandlers() {
+        // Status dropdown change
+        document.querySelectorAll('[data-action="change-status"]').forEach(select => {
+          select.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            const newStatus = e.target.value;
+            const p = programmes.find(item => item.id === id);
+            if (p) {
+              p.status = newStatus;
+              saveData();
+              renderStats();
+              renderListView();
+            }
+          });
+        });
+
+        // Edit button
+        document.querySelectorAll('[data-action="edit-prog"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            openModal(id);
+          });
+        });
+
+        // Delete button
+        document.querySelectorAll('[data-action="delete-prog"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const p = programmes.find(item => item.id === id);
+            if (p && confirm(`Are you sure you want to delete programme "${p.name}"?`)) {
+              programmes = programmes.filter(item => item.id !== id);
+              saveData();
+              populatePicFilterOptions();
+              renderStats();
+              renderCurrentView();
+            }
+          });
+        });
+
+        // Toggle task checkbox
+        document.querySelectorAll('[data-action="toggle-task"]').forEach(chk => {
+          chk.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            const task = e.target.dataset.task;
+            const isChecked = e.target.checked;
+            const p = programmes.find(item => item.id === id);
+            if (p) {
+              if (!p.checklist) p.checklist = {};
+              p.checklist[task] = isChecked;
+              saveData();
+              renderStats();
+              renderListView();
+            }
+          });
+        });
+      }
+
+      // Render Calendar View
+      function renderCalendarView() {
+        const year = calendarDisplayMonth.getFullYear();
+        const month = calendarDisplayMonth.getMonth();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        
+        document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+
+        const firstDayIdx = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const grid = document.getElementById('calendar-days-grid');
+        grid.innerHTML = '';
+
+        // Empty leading padding cells
+        for (let i = 0; i < firstDayIdx; i++) {
+          const emptyCell = document.createElement('div');
+          emptyCell.className = 'min-h-[70px] sm:min-h-[85px] bg-slate-900/30 rounded-xl p-1 opacity-20';
+          grid.appendChild(emptyCell);
+        }
+
+        // Active Days
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const dayProgrammes = programmes.filter(p => p.date === dateStr);
+          const isSelected = dateStr === selectedCalendarDate;
+
+          const cell = document.createElement('div');
+          cell.className = `min-h-[70px] sm:min-h-[85px] rounded-xl p-1.5 flex flex-col justify-between cursor-pointer border transition-all ${
+            isSelected 
+              ? 'bg-sky-950/80 border-sky-400 ring-2 ring-sky-400/30' 
+              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+          }`;
+
+          cell.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black ${isSelected ? 'text-sky-300' : 'text-slate-300'}">${d}</span>
+              ${dayProgrammes.length > 0 ? `
+                <span class="w-4 h-4 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/40 text-[9px] font-bold flex items-center justify-center">
+                  ${dayProgrammes.length}
+                </span>
+              ` : ''}
+            </div>
+            <div class="space-y-1 mt-1 overflow-hidden">
+              ${dayProgrammes.slice(0, 2).map(p => `
+                <div class="text-[9px] font-bold truncate px-1 rounded bg-[#0B1728] border border-slate-800 text-slate-300">
+                  <span class="text-sky-400">${p.startTime.slice(0, 5)}</span> ${p.name}
+                </div>
+              `).join('')}
+              ${dayProgrammes.length > 2 ? `
+                <div class="text-[8px] font-bold text-slate-500 text-right">+${dayProgrammes.length - 2} more</div>
+              ` : ''}
+            </div>
+          `;
+
+          cell.addEventListener('click', () => {
+            selectedCalendarDate = dateStr;
+            renderCalendarView();
+          });
+
+          grid.appendChild(cell);
+        }
+
+        renderCalendarDayDetails();
+      }
+
+      // Render Selected Date Details in Calendar View
+      function renderCalendarDayDetails() {
+        const detailsTitle = document.getElementById('cal-selected-day-title');
+        const detailsCount = document.getElementById('cal-selected-day-count');
+        const detailsList = document.getElementById('cal-selected-day-list');
+
+        detailsTitle.textContent = `Scheduled Programmes for ${formatDateString(selectedCalendarDate)}`;
+        
+        const dayProgrammes = programmes.filter(p => p.date === selectedCalendarDate).sort((a,b) => a.startTime.localeCompare(b.startTime));
+        detailsCount.textContent = `${dayProgrammes.length} Programmes`;
+
+        if (dayProgrammes.length === 0) {
+          detailsList.innerHTML = `
+            <div class="py-6 text-center text-slate-500 text-xs">
+              No programmes scheduled on this date.
+              <button id="btn-cal-add-here" class="block mx-auto mt-2 text-sky-400 hover:text-sky-300 font-bold underline">Schedule a programme here</button>
+            </div>
+          `;
+          const addHere = document.getElementById('btn-cal-add-here');
+          if (addHere) {
+            addHere.addEventListener('click', () => {
+              openModal(null, selectedCalendarDate);
+            });
+          }
+          return;
+        }
+
+        detailsList.innerHTML = dayProgrammes.map(p => {
+          const prog = calculateProgress(p.checklist);
+          const chTheme = CHANNEL_THEMES[p.channel] || { bg: 'bg-slate-800', text: 'text-slate-200', border: 'border-slate-700' };
+          const stConfig = STATUS_CONFIG[p.status] || STATUS_CONFIG['Draft'];
+
+          return `
+            <div class="p-3 bg-slate-900 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center space-x-3">
+                <span class="px-2 py-0.5 text-[10px] font-black rounded ${chTheme.bg} ${chTheme.text} border ${chTheme.border}">
+                  ${p.channel}
+                </span>
+                <div>
+                  <div class="text-xs font-bold text-white flex items-center space-x-2">
+                    <span>${p.name}</span>
+                    <span class="text-[10px] font-mono text-sky-400 font-semibold">${p.startTime} - ${p.endTime}</span>
+                  </div>
+                  <div class="text-[11px] text-slate-400">PIC: ${p.pic}</div>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${stConfig.bg}">${p.status}</span>
+                <span class="text-xs font-bold text-sky-400">${prog.percent}%</span>
+                <button data-action="edit-prog" data-id="${p.id}" class="text-xs text-slate-400 hover:text-white underline">Edit</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        detailsList.querySelectorAll('[data-action="edit-prog"]').forEach(b => {
+          b.addEventListener('click', () => openModal(b.dataset.id));
+        });
+      }
+
+      // Open Add/Edit Modal
+      function openModal(programmeId = null, prefillDate = null) {
+        const modal = document.getElementById('programme-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const form = document.getElementById('programme-form');
+        
+        form.reset();
+        document.getElementById('form-programme-id').value = '';
+
+        if (programmeId) {
+          const p = programmes.find(item => item.id === programmeId);
+          if (!p) return;
+          modalTitle.textContent = 'Edit Programme';
+          document.getElementById('form-programme-id').value = p.id;
+          document.getElementById('form-name').value = p.name;
+          document.getElementById('form-channel').value = p.channel;
+          document.getElementById('form-date').value = p.date;
+          document.getElementById('form-start-time').value = p.startTime;
+          document.getElementById('form-end-time').value = p.endTime;
+          document.getElementById('form-pic').value = p.pic;
+          document.getElementById('form-status').value = p.status;
+          document.getElementById('form-notes').value = p.notes || '';
+
+          // Checkboxes
+          const cl = p.checklist || {};
+          document.getElementById('check-script').checked = !!cl.scriptCompleted;
+          document.getElementById('check-talent').checked = !!cl.talentConfirmed;
+          document.getElementById('check-studio').checked = !!cl.studioBooked;
+          document.getElementById('check-assets').checked = !!cl.assetsReady;
+          document.getElementById('check-approved').checked = !!cl.approved;
+          document.getElementById('check-published').checked = !!cl.publishedOnAir;
+        } else {
+          modalTitle.textContent = 'Add New Programme';
+          document.getElementById('form-date').value = prefillDate || new Date().toISOString().split('T')[0];
+          document.getElementById('form-start-time').value = '20:00';
+          document.getElementById('form-end-time').value = '21:00';
+          document.getElementById('form-status').value = 'Draft';
+        }
+
+        modal.classList.remove('hidden');
+      }
+
+      // Close Modal
+      function closeModal() {
+        document.getElementById('programme-modal').classList.add('hidden');
+      }
+
+      // Handle Modal Form Submit
+      function handleFormSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('form-programme-id').value;
+        const name = document.getElementById('form-name').value.trim();
+        const channel = document.getElementById('form-channel').value;
+        const date = document.getElementById('form-date').value;
+        const startTime = document.getElementById('form-start-time').value;
+        const endTime = document.getElementById('form-end-time').value;
+        const pic = document.getElementById('form-pic').value.trim();
+        const status = document.getElementById('form-status').value;
+        const notes = document.getElementById('form-notes').value.trim();
+
+        const checklist = {
+          scriptCompleted: document.getElementById('check-script').checked,
+          talentConfirmed: document.getElementById('check-talent').checked,
+          studioBooked: document.getElementById('check-studio').checked,
+          assetsReady: document.getElementById('check-assets').checked,
+          approved: document.getElementById('check-approved').checked,
+          publishedOnAir: document.getElementById('check-published').checked
+        };
+
+        if (id) {
+          // Update existing
+          const existing = programmes.find(p => p.id === id);
+          if (existing) {
+            existing.name = name;
+            existing.channel = channel;
+            existing.date = date;
+            existing.startTime = startTime;
+            existing.endTime = endTime;
+            existing.pic = pic;
+            existing.status = status;
+            existing.notes = notes;
+            existing.checklist = checklist;
+          }
+        } else {
+          // Create new
+          const newProgramme = {
+            id: 'prog-' + Date.now(),
+            name,
+            channel,
+            date,
+            startTime,
+            endTime,
+            pic,
+            status,
+            notes,
+            checklist
+          };
+          programmes.push(newProgramme);
+        }
+
+        saveData();
+        populatePicFilterOptions();
+        renderStats();
+        renderCurrentView();
+        closeModal();
+      }
+
+      // Setup Event Listeners
+      function setupEventListeners() {
+        // View switching
+        document.getElementById('btn-view-list').addEventListener('click', () => {
+          currentView = 'list';
+          document.getElementById('btn-view-list').classList.add('bg-sky-600', 'text-white', 'shadow-sm');
+          document.getElementById('btn-view-list').classList.remove('text-slate-400');
+          document.getElementById('btn-view-calendar').classList.remove('bg-sky-600', 'text-white', 'shadow-sm');
+          document.getElementById('btn-view-calendar').classList.add('text-slate-400');
+          renderCurrentView();
+        });
+
+        document.getElementById('btn-view-calendar').addEventListener('click', () => {
+          currentView = 'calendar';
+          document.getElementById('btn-view-calendar').classList.add('bg-sky-600', 'text-white', 'shadow-sm');
+          document.getElementById('btn-view-calendar').classList.remove('text-slate-400');
+          document.getElementById('btn-view-list').classList.remove('bg-sky-600', 'text-white', 'shadow-sm');
+          document.getElementById('btn-view-list').classList.add('text-slate-400');
+          renderCurrentView();
+        });
+
+        // Add programme modal trigger
+        document.getElementById('btn-open-add-modal').addEventListener('click', () => openModal());
+        document.getElementById('btn-empty-add').addEventListener('click', () => openModal());
+
+        // Close modal triggers
+        document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+        document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+
+        // Form submit
+        document.getElementById('programme-form').addEventListener('submit', handleFormSubmit);
+
+        // Filter search input
+        const searchInput = document.getElementById('filter-search');
+        const clearBtn = document.getElementById('btn-clear-search');
+        searchInput.addEventListener('input', () => {
+          clearBtn.classList.toggle('hidden', searchInput.value.length === 0);
+          renderCurrentView();
+        });
+        clearBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          clearBtn.classList.add('hidden');
+          renderCurrentView();
+        });
+
+        // Other filters
+        document.getElementById('filter-date').addEventListener('change', renderCurrentView);
+        document.getElementById('filter-pic').addEventListener('change', renderCurrentView);
+        document.getElementById('filter-status').addEventListener('change', renderCurrentView);
+
+        // Channel filter pills
+        document.querySelectorAll('#channel-filter-pills .channel-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#channel-filter-pills .channel-pill').forEach(b => {
+              b.classList.remove('bg-sky-600', 'text-white', 'shadow-sm');
+              b.classList.add('bg-slate-900', 'text-slate-300');
+            });
+            btn.classList.remove('bg-slate-900', 'text-slate-300');
+            btn.classList.add('bg-sky-600', 'text-white', 'shadow-sm');
+
+            activeChannelFilter = btn.dataset.channel;
+            renderCurrentView();
+          });
+        });
+
+        // Reset filters button
+        document.getElementById('btn-reset-filters').addEventListener('click', () => {
+          document.getElementById('filter-search').value = '';
+          document.getElementById('filter-date').value = '';
+          document.getElementById('filter-pic').value = 'ALL';
+          document.getElementById('filter-status').value = 'ALL';
+          document.getElementById('btn-clear-search').classList.add('hidden');
+
+          // Reset channel pills
+          document.querySelectorAll('#channel-filter-pills .channel-pill').forEach(b => {
+            b.classList.remove('bg-sky-600', 'text-white', 'shadow-sm');
+            b.classList.add('bg-slate-900', 'text-slate-300');
+          });
+          const allPill = document.querySelector('#channel-filter-pills [data-channel="ALL"]');
+          if (allPill) {
+            allPill.classList.remove('bg-slate-900', 'text-slate-300');
+            allPill.classList.add('bg-sky-600', 'text-white', 'shadow-sm');
+          }
+          activeChannelFilter = 'ALL';
+          renderCurrentView();
+        });
+
+        // Reload sample data
+        document.getElementById('btn-reload-sample').addEventListener('click', () => {
+          if (confirm('Reset to initial sample production programmes? Current custom data will be replaced.')) {
+            programmes = JSON.parse(JSON.stringify(INITIAL_SAMPLE_DATA));
+            saveData();
+            populatePicFilterOptions();
+            renderStats();
+            renderCurrentView();
+          }
+        });
+
+        // Calendar Month navigation
+        document.getElementById('btn-cal-prev').addEventListener('click', () => {
+          calendarDisplayMonth.setMonth(calendarDisplayMonth.getMonth() - 1);
+          renderCalendarView();
+        });
+        document.getElementById('btn-cal-next').addEventListener('click', () => {
+          calendarDisplayMonth.setMonth(calendarDisplayMonth.getMonth() + 1);
+          renderCalendarView();
+        });
+        document.getElementById('btn-cal-today').addEventListener('click', () => {
+          const now = new Date();
+          calendarDisplayMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          selectedCalendarDate = now.toISOString().split('T')[0];
+          renderCalendarView();
+        });
+      }
+
+      // Run on DOM ready
+      document.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>
